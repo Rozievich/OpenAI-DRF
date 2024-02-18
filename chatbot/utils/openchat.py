@@ -1,4 +1,4 @@
-import os
+from time import sleep
 from config.settings import OPENAI_KEY
 from openai import OpenAI
 
@@ -34,5 +34,37 @@ def create_asistant():
         model="gpt-4",
         file_ids=[],
     )
-    return response
+    return response.id
 
+def create_thread(message=None):
+    if message:
+        thread = client.beta.threads.create(
+            messages=[
+                {
+                    "role": "user", "content": message
+                },
+            ]
+        )
+        return thread.id
+    else:
+        thread = client.beta.threads.create()
+        return thread
+
+def create_run(thread_id, asistant_id):
+    run = client.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=asistant_id
+    )
+    return run.id
+
+def get_run(thread_id, run_id):
+    runs = client.beta.threads.runs.retrieve(run_id=run_id, thread_id=thread_id)
+    while runs.status != 'completed':
+        runs = client.beta.threads.runs.retrieve(run_id=run_id, thread_id=thread_id)
+        sleep(1)
+        if runs.status == 'failed':
+            return runs
+    else:
+        message_response = client.beta.threads.messages.list(thread_id=thread_id)
+        return reversed(message_response)
+    
