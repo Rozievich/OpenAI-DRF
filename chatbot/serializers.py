@@ -1,20 +1,20 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, CharField, ReadOnlyField
 from .models import Chat
-from .utils.openchat import create_asistant, create_thread, create_run, get_run
+from .utils.openchat import ChatBotAI
 
 class ChatModelSerializer(ModelSerializer):
+    message = CharField(max_length=600, write_only=True)
+    thread_id = ReadOnlyField()
+    user_id = ReadOnlyField()
+
     class Meta:
         model = Chat
         fields = '__all__'
     
     def create(self, validated_data):
-        message = validated_data.get('message', None)
-        if not validated_data.get('asistant_id', None):
-            asistant = create_asistant()
-        if not validated_data.get('thread_id', None):
-            thread = create_thread(message=message)
-        run = create_run(thread_id=thread, asistant_id=asistant)
-        response = get_run(thread_id=thread, run_id=run)
-        validated_data['asistant_id'] = asistant
-        validated_data['thread_id'] = thread
+        message = validated_data.pop('message')
+        user = self.context['request'].user
+        thread = ChatBotAI().create_thread(content=message)
+        validated_data['thread_id'] = thread.id
+        validated_data['user_id'] = user
         return super().create(validated_data)

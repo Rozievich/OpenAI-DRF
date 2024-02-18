@@ -1,3 +1,9 @@
-from django.shortcuts import render
+from rest_framework.generics import ListCreateAPIView
+from rest_framework.permissions import IsAuthenticated
+from .serializers import ChatModelSerializer
+from .models import Chat
 
-# Create your views here.
+class ChatListCreateAPIView(ListCreateAPIView):
+    queryset = Chat.objects.all()
+    serializer_class = ChatModelSerializer
+    permission_classes = (IsAuthenticated, )
